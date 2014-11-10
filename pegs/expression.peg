@@ -19,6 +19,14 @@
 
     return result;
   }
+
+  function pow(x, y) {
+  	if (y === 0) {
+  		return 1;
+  	} else {
+  		return x * pow(x, y - 1);
+  	}
+  }
 }
 
 Expression
@@ -30,37 +38,29 @@ Expression
     }
 
 Term
-  = first:Factor rest:(_ ('*' / '/') _ Factor)* {
+  = first:Exponent rest:(_ ('*' / '/') _ Exponent)* {
       return combine(first, rest, {
         "*": function(left, right) { return left * right; },
         "/": function(left, right) { return left / right; }
       });
     }
-
+Exponent
+	= base:Factor '^' power:Exponent { return pow(base, power);}
+	/ Factor
+	
 Factor
   = "(" _ expr:Expression _ ")" { return expr; }
-  / Integer
+  / Number
+
+Number
+	= Float
+	/ Integer
 
 Integer "integer"
-  = [0-9]+ { return parseInt(text(), 10); }
+  = [0-9]+ _ { return parseInt(text(), 10); }
 
-Operator
-	= additive
-	/ multiplicative
-
-additive
-	= plus
-	/ minus
-
-multiplicative
-	= times
-	/ divide
-
-plus = '+' _
-minus = '-' _
-
-times = '*' _
-divide = '/' _
+Float
+	= [0-9]* '.' [0-9]+ { return parseFloat(text());}
 
 _ "whitespace"
-  = [ \t\n\r]*
+  = [ \t\n\r]* {return '';}
