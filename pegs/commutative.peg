@@ -1,55 +1,93 @@
+// AST version: returns an Abstract Syntax Tree.
+ 
+// Refactors subtraction into adding negatives.
+// e.g. 1-2-3 is treated as 1+(-2)+(-3).
+//
+// Refactors division into multiplying by a reciprocal.
+// e.g. 1024/2/2 is treated as 1024 * 1/2 * 1/2.
+//
+// Author: Benjamin J. Kruger <bekroogle@gmail.com
+ 
 /*
-S 		-> ADD
-
-ADD 	-> SUB '+' E
-   	   | SUB
-
-SUB 	-> NEG SUB
-	 	   | NEG
-
-NEG 	-> '-' MULT
-  	   | MULT
-
-MULT	-> DIV '*' MULT
-			 | DIV
-
-DIV 	-> RECIP DIV
-			 | RECIP
-
-RECIP -> '/' NUM
-			 | NUM
-
-NUM 	-> [0-9]+
+The MIT License (MIT)
+ 
+Copyright (c) 2014 Benjamin J. Kruger
+ 
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+ 
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+ 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 */
+ 
+{
+  var power = function(base, exp) {
+    if (exp == 0) {
+      return 1;
+    } else {
+      return base * power(base, exp-1);
+    }
+  };
 
-start = add
+  var traverse = function(ast) {
+  if (ast.token === "number") {
+    return ast.lexeme;
+  }
+  if (ast.token === "oper") {
+   switch (ast.lexeme) {
+    case "+": return traverse(ast.children[0]) + traverse(ast.children[1]);
+    case "*": return traverse(ast.children[0]) * traverse(ast.children[1]);
+    case "/": return traverse(ast.children[0]) / traverse(ast.children[1]);
+    case "^": return power(traverse(ast.children[0]), traverse(ast.children[1]));
+   }
+  }
+ };
+}
+ 
+start = a:add { console.log("a: " + JSON.stringify(a)); return traverse(a); }
  
 add
-  = l:subtract '+' r:add { return l + r; }
+  = l:subtract '+' r:add { return {token: 'oper', lexeme: '+', children: [l, r]}; }
   / subtract
-
+ 
 subtract
-  = l:neg r:subtract { return l + r;}
+  = l:neg r:subtract { return {token: 'oper', lexeme: '+', children: [l, r]}; }
   / neg
-
+ 
 neg
-  = '-' n:mult { return n * (-1); }
+  = '-' n:mult { return {token: 'oper', lexeme: '*', children: [n, {token: 'number', lexeme: -1}]}; }
   / mult
-
+ 
 mult 
-  = l:div '*' r:mult { return l * r; }
+  = l:div '*' r:mult { return {token: 'oper', lexeme: '*', children: [l, r]}; }
   / div
  
 div
-  = num:recip denom:div { return num * denom; }
+  = num:recip denom:div { return {token: 'oper', lexeme: '*', children: [num, denom]}; }
   / recip
  
 recip
-  = '/' n:number { return 1 / n; }
-  / parens
+  = '/' n:number { return {token: 'oper', lexeme: '/', children: [{token: 'number', lexeme: '1'}, n]}; }
+  / power
 
+power
+  = x:parens '^' y:power {return {token: 'oper', lexeme: '^', children: [x, y]}; }
+  / parens
+ 
 parens
-  = '(' add ')'
+  = '(' a:add ')' {return a;}
   / number
-   
-number = [0-9]+ { return parseInt(text(), 10); }
+ 
+number = [0-9]+ { return {token: 'number', lexeme: parseInt(text(),10)}; }
