@@ -1,0 +1,55 @@
+/*
+S 		-> ADD
+
+ADD 	-> SUB '+' E
+   	   | SUB
+
+SUB 	-> NEG SUB
+	 	   | NEG
+
+NEG 	-> '-' MULT
+  	   | MULT
+
+MULT	-> DIV '*' MULT
+			 | DIV
+
+DIV 	-> RECIP DIV
+			 | RECIP
+
+RECIP -> '/' NUM
+			 | NUM
+
+NUM 	-> [0-9]+
+*/
+
+start = add
+ 
+add
+  = l:subtract '+' r:add { return l + r; }
+  / subtract
+
+subtract
+  = l:neg r:subtract { return l + r;}
+  / neg
+
+neg
+  = '-' n:mult { return n * (-1); }
+  / mult
+
+mult 
+  = l:div '*' r:mult { return l * r; }
+  / div
+ 
+div
+  = num:recip denom:div { return num * denom; }
+  / recip
+ 
+recip
+  = '/' n:number { return 1 / n; }
+  / parens
+
+parens
+  = '(' add ')'
+  / number
+   
+number = [0-9]+ { return parseInt(text(), 10); }
